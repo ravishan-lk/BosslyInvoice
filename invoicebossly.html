@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bossly — Invoice Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8D5A0;
+    --black: #0A0A0A;
+    --dark: #111111;
+    --gray: #666;
+    --light: #F8F6F0;
+    --border: #E0D8C8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #F5F5F5;
+    min-height: 100vh;
+    color: var(--black);
+  }
+
+  /* ── CONTROL PANEL ── */
+  .control-panel {
+    background: var(--black);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .brand-header {
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--gold);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+  }
+
+  .panel-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    padding: 9px 22px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold), #A8872E);
+    color: #000;
+  }
+
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+  }
+
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  .btn-success {
+    background: #1a4731;
+    color: #4ade80;
+    border: 1px solid #166534;
+  }
+
+  /* ── EDITOR LAYOUT ── */
+  .editor-wrap {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ── FORM PANEL ── */
+  .form-panel {
+    background: white;
+    border-right: 1px solid var(--border);
+    padding: 28px 24px;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+  }
+
+  .form-section {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #F0EDE6;
+  }
+
+  .form-section:last-child { border-bottom: none; }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--black);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-row.full { grid-template-columns: 1fr; }
+
+  .field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 5px;
+  }
+
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--black);
+    background: #FAFAF8;
+    transition: border 0.2s;
+    outline: none;
+  }
+
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--gold);
+    background: white;
+  }
+
+  .field textarea { resize: vertical; min-height: 60px; }
+
+  /* Items table in form */
+  .items-form { margin-bottom: 12px; }
+
+  .item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 28px;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: start;
+  }
+
+  .item-row input, .item-row select {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    background: #FAFAF8;
+    outline: none;
+    width: 100%;
+  }
+
+  .item-row input:focus, .item-row select:focus { border-color: var(--gold); }
+
+  .del-btn {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #EF4444;
+    border-radius: 6px;
+    width: 28px;
+    height: 34px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 0;
+  }
+
+  .add-item-btn {
+    background: #F8F8F8;
+    border: 1px dashed var(--gold);
+    color: var(--gold);
+    border-radius: 6px;
+    padding: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .add-item-btn:hover { background: #FDF8EC; }
+
+  .col-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 28px;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .col-header span {
+    font-size: 9px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+    padding: 0 10px;
+  }
+
+  /* payment select */
+  .payment-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .pill {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    transition: all 0.2s;
+    background: white;
+    color: var(--gray);
+  }
+
+  .pill.active {
+    background: var(--black);
+    color: var(--gold);
+    border-color: var(--black);
+  }
+
+  /* ── PREVIEW PANEL ── */
+  .preview-panel {
+    padding: 32px;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #E8E8E8;
+  }
+
+  /* ── INVOICE ── */
+  .invoice {
+    background: #FFFFFF;
+    width: 794px;
+    min-height: 1123px;
+    padding: 56px 60px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative corner */
+  .invoice::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 200px; height: 200px;
+    background: linear-gradient(135deg, transparent 50%, #F0F0F0 50%);
+    pointer-events: none;
+  }
+
+  .invoice::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 120px; height: 4px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+  }
+
+  /* Invoice Header */
+  .inv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 2px solid var(--black);
+    position: relative;
+  }
+
+  .inv-brand .brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--black);
+    letter-spacing: 4px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .inv-brand .brand-tag {
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .inv-brand .brand-sub {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+
+  .inv-meta { text-align: right; }
+
+  .inv-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--black);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .inv-meta-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 24px;
+    margin-bottom: 6px;
+  }
+
+  .inv-meta-label {
+    font-size: 10px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .inv-meta-val {
+    font-size: 13px;
+    color: var(--black);
+    font-weight: 500;
+    min-width: 120px;
+    text-align: right;
+  }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .status-paid { background: #D1FAE5; color: #065F46; }
+  .status-cod { background: #FEF3C7; color: #92400E; }
+  .status-pending { background: #FEE2E2; color: #991B1B; }
+
+  /* Bill To */
+  .inv-addresses {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .addr-block .addr-title {
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .addr-block .addr-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--black);
+    margin-bottom: 4px;
+  }
+
+  .addr-block .addr-detail {
+    font-size: 12px;
+    color: #555;
+    line-height: 1.7;
+  }
+
+  /* Items Table */
+  .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+
+  .inv-table thead tr {
+    background: var(--black);
+  }
+
+  .inv-table thead th {
+    padding: 12px 16px;
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .inv-table thead th:last-child { text-align: right; }
+  .inv-table thead th:nth-child(3),
+  .inv-table thead th:nth-child(4) { text-align: center; }
+
+  .inv-table tbody tr {
+    border-bottom: 1px solid #F0EDE6;
+    transition: background 0.1s;
+  }
+
+  .inv-table tbody tr:nth-child(even) { background: #F8F8F8; }
+
+  .inv-table tbody td {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--black);
+    vertical-align: top;
+  }
+
+  .inv-table tbody td:nth-child(3),
+  .inv-table tbody td:nth-child(4) { text-align: center; }
+
+  .inv-table tbody td:last-child {
+    text-align: right;
+    font-weight: 600;
+    color: var(--black);
+  }
+
+  .item-desc { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  /* Totals */
+  .inv-totals {
+    margin-top: 0;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .totals-box {
+    width: 280px;
+    border-top: 2px solid var(--black);
+  }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #F0EDE6;
+  }
+
+  .total-row .t-label { color: var(--gray); }
+  .total-row .t-val { font-weight: 500; }
+
+  .total-row.grand {
+    background: var(--black);
+    padding: 14px 16px;
+    border-bottom: none;
+  }
+
+  .total-row.grand .t-label {
+    color: var(--gold);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .total-row.grand .t-val {
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Delivery & Payment Info */
+  .inv-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+
+  .info-block .info-label {
+    font-size: 9px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .info-block .info-val {
+    font-size: 12px;
+    color: var(--black);
+    font-weight: 500;
+    line-height: 1.6;
+  }
+
+  /* Notes */
+  .inv-notes {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: #F8F8F8;
+    border-left: 3px solid var(--gold);
+    border-radius: 0 6px 6px 0;
+  }
+
+  .inv-notes .notes-label {
+    font-size: 9px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .inv-notes .notes-text {
+    font-size: 12px;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  /* Footer */
+  .inv-footer {
+    position: absolute;
+    bottom: 32px;
+    left: 60px;
+    right: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .footer-left .footer-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    color: var(--black);
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  .footer-left .footer-sub {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 2px;
+  }
+
+  .footer-right {
+    text-align: right;
+    font-size: 10px;
+    color: var(--gray);
+    line-height: 1.7;
+  }
+
+  .gold-line {
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), #E8D5A0, transparent);
+    margin-bottom: 32px;
+    border-radius: 2px;
+  }
+
+  /* ── PRINT — Full Color ── */
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+    @page { margin: 0; size: A4; }
+    body { background: #FFFFFF !important; margin: 0 !important; padding: 0 !important; }
+    .control-panel { display: none !important; }
+    .editor-wrap { display: block !important; }
+    .form-panel { display: none !important; }
+    .preview-panel {
+      padding: 0 !important;
+      background: #FFFFFF !important;
+      max-height: none !important;
+      overflow: visible !important;
+      display: block !important;
+    }
+    .invoice {
+      box-shadow: none !important;
+      width: 100% !important;
+      min-height: 100vh !important;
+      margin: 0 auto !important;
+      background: #FFFFFF !important;
+      color: #0A0A0A !important;
+      padding: 48px 56px !important;
+    }
+    .invoice::before { background: linear-gradient(135deg, transparent 50%, #F0F0F0 50%) !important; }
+    .invoice::after  { background: linear-gradient(90deg, #C9A84C, transparent) !important; }
+    .inv-brand .brand-name { color: #C9A84C !important; }
+    .inv-brand .brand-tag  { color: #E8D5A0 !important; }
+    .inv-brand .brand-sub  { color: #999 !important; }
+    .inv-header { border-bottom: 2px solid #C9A84C !important; }
+    .inv-title  { color: #C9A84C !important; }
+    .inv-meta-label { color: #888 !important; }
+    .inv-meta-val   { color: #0A0A0A !important; }
+    .inv-number-badge { background: #F5F5F5 !important; border-color: #C9A84C !important; color: #0A0A0A !important; }
+    .status-cod     { background: #3D2E00 !important; color: #F59E0B !important; }
+    .status-paid    { background: #052E16 !important; color: #4ADE80 !important; }
+    .status-pending { background: #450A0A !important; color: #F87171 !important; }
+    .gold-line { background: linear-gradient(90deg, #C9A84C, #E8D5A0, transparent) !important; }
+    .addr-block .addr-title  { color: #C9A84C !important; }
+    .addr-block .addr-name   { color: #E8E8E8 !important; }
+    .addr-block .addr-detail { color: #999 !important; }
+    .inv-table thead tr { background: #C9A84C !important; }
+    .inv-table thead th { color: #0A0A0A !important; font-weight: 700 !important; }
+    .inv-table tbody tr { border-bottom: 1px solid #E8E8E8 !important; }
+    .inv-table tbody tr:nth-child(even) { background: #F8F8F8 !important; }
+    .inv-table tbody td { color: #0A0A0A !important; }
+    .item-desc { color: #666 !important; }
+    .totals-box { border-top: 2px solid #0A0A0A !important; }
+    .total-row  { border-bottom: 1px solid #E8E8E8 !important; }
+    .total-row .t-label { color: #888 !important; }
+    .total-row .t-val   { color: #0A0A0A !important; }
+    .total-row.grand { background: #C9A84C !important; }
+    .total-row.grand .t-label { color: #0A0A0A !important; }
+    .total-row.grand .t-val   { color: #0A0A0A !important; font-weight: 800 !important; }
+    .inv-info-grid { border-top: 1px solid #E0E0E0 !important; }
+    .info-block .info-label { color: #C9A84C !important; }
+    .info-block .info-val   { color: #333333 !important; }
+    .inv-notes { background: #F8F8F8 !important; border-left: 3px solid #C9A84C !important; }
+    .inv-notes .notes-label { color: #C9A84C !important; }
+    .inv-notes .notes-text  { color: #555 !important; }
+    .footer-left .footer-brand { color: #C9A84C !important; }
+    .footer-left .footer-sub   { color: #666 !important; }
+    .footer-right { color: #666 !important; }
+  }
+
+  /* Summary totals in form */
+  .form-summary {
+    background: #F8F8F8;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 12px;
+  }
+
+  .sum-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: #555;
+  }
+
+  .sum-row.total {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--black);
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+
+  .sum-row.total span:last-child { color: var(--gold); }
+
+  /* Invoice number badge */
+  .inv-number-badge {
+    display: inline-block;
+    background: #F8F8F8;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-family: 'DM Sans', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--black);
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- CONTROL PANEL -->
+<div class="control-panel">
+  <div class="brand-header">B◎SSLY</div>
+  <div class="panel-actions">
+    <span style="color:#555;font-size:12px;">Invoice Generator</span>
+    <button class="btn btn-outline" onclick="clearForm()">🗑 Clear</button>
+    <button class="btn btn-outline" onclick="newInvoice()">+ New</button>
+    <button class="btn btn-primary" onclick="printInvoice()">🖨 Print / Save PDF</button>
+  </div>
+</div>
+
+<div class="editor-wrap">
+
+  <!-- FORM PANEL -->
+  <div class="form-panel">
+
+    <!-- Invoice Details -->
+    <div class="form-section">
+      <div class="section-title">Invoice Details</div>
+      <div class="form-row">
+        <div class="field">
+          <label>Invoice No.</label>
+          <input type="text" id="invNumber" value="BOS-2026-001" oninput="render()">
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="invDate" oninput="render()">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="field">
+          <label>Payment Status</label>
+          <div class="payment-pills">
+            <div class="pill active" onclick="setPayStatus('COD')" id="pill-COD">💵 COD</div>
+            <div class="pill" onclick="setPayStatus('Paid')" id="pill-Paid">✅ Paid</div>
+            <div class="pill" onclick="setPayStatus('Pending')" id="pill-Pending">⏳ Pending</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer Details -->
+    <div class="form-section">
+      <div class="section-title">Customer</div>
+      <div class="form-row full">
+        <div class="field">
+          <label>Full Name *</label>
+          <input type="text" id="custName" placeholder="Customer name" oninput="render()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Phone</label>
+          <input type="text" id="custPhone" placeholder="07X XXX XXXX" oninput="render()">
+        </div>
+        <div class="field">
+          <label>City</label>
+          <input type="text" id="custCity" placeholder="Colombo" oninput="render()">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="field">
+          <label>Delivery Address</label>
+          <textarea id="custAddress" placeholder="Full delivery address" oninput="render()" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="form-section">
+      <div class="section-title">Items</div>
+      <div class="col-header">
+        <span>Product</span>
+        <span>Size</span>
+        <span>Qty</span>
+        <span>Price</span>
+        <span></span>
+      </div>
+      <div id="items-container" class="items-form"></div>
+      <button class="add-item-btn" onclick="addItem()">+ Add Item</button>
+
+      <!-- Summary -->
+      <div class="form-summary">
+        <div class="sum-row"><span>Subtotal</span><span id="sum-sub">Rs 0.00</span></div>
+        <div class="sum-row"><span>Delivery</span><span id="sum-del">Rs 0.00</span></div>
+        <div class="sum-row"><span>Discount</span><span id="sum-disc">- Rs 0.00</span></div>
+        <div class="sum-row total"><span>Total</span><span id="sum-total">Rs 0.00</span></div>
+      </div>
+    </div>
+
+    <!-- Delivery -->
+    <div class="form-section">
+      <div class="section-title">Delivery</div>
+      <div class="form-row">
+        <div class="field">
+          <label>Courier</label>
+          <input type="text" id="courier" placeholder="Domex / Pronto" oninput="render()">
+        </div>
+        <div class="field">
+          <label>Tracking #</label>
+          <input type="text" id="tracking" placeholder="Tracking number" oninput="render()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Delivery Fee (Rs)</label>
+          <input type="number" id="deliveryFee" value="350" oninput="render()">
+        </div>
+        <div class="field">
+          <label>Discount (Rs)</label>
+          <input type="number" id="discount" value="0" oninput="render()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="form-section">
+      <div class="section-title">Notes</div>
+      <div class="field">
+        <textarea id="notes" placeholder="Thank you for shopping with Bossly! 🖤" oninput="render()" rows="3"></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PREVIEW PANEL -->
+  <div class="preview-panel">
+    <div id="invoice" class="invoice">
+
+      <!-- Header -->
+      <div class="inv-header">
+        <div class="inv-brand">
+          <div class="brand-name">B◎SSLY</div>
+          <div class="brand-tag">Feel Like a Boss</div>
+          <div class="brand-sub">
+            A & R Fashion (Pvt)<br>
+            Sri Lanka<br>
+            📲 +94 777 677 641<br>
+            bosslystyle@gmail.com
+          </div>
+        </div>
+        <div class="inv-meta">
+          <div class="inv-title">Invoice</div>
+          <div class="inv-meta-row">
+            <span class="inv-meta-label">Invoice No</span>
+            <span class="inv-meta-val inv-number-badge" id="p-invNumber">BOS-2026-001</span>
+          </div>
+          <div class="inv-meta-row">
+            <span class="inv-meta-label">Date</span>
+            <span class="inv-meta-val" id="p-date">—</span>
+          </div>
+          <div style="margin-top:8px;">
+            <span class="status-badge status-cod" id="p-statusBadge">💵 Cash on Delivery</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gold accent line -->
+      <div class="gold-line"></div>
+
+      <!-- Addresses -->
+      <div class="inv-addresses">
+        <div class="addr-block">
+          <div class="addr-title">Bill To</div>
+          <div class="addr-name" id="p-custName">Customer Name</div>
+          <div class="addr-detail" id="p-custDetail">
+            Phone: —<br>Address: —<br>City: —
+          </div>
+        </div>
+        <div class="addr-block">
+          <div class="addr-title">From</div>
+          <div class="addr-name">Bossly</div>
+          <div class="addr-detail">
+            A & R Fashion (Pvt)<br>
+            Sri Lanka<br>
+            WhatsApp: +94 777 677 641<br>
+            facebook.com/BosslyFB
+          </div>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th style="width:40%">Item Description</th>
+            <th>Size</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="p-items">
+          <tr>
+            <td colspan="5" style="text-align:center;color:#ccc;padding:24px;">Add items to see preview</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Totals -->
+      <div class="inv-totals">
+        <div class="totals-box">
+          <div class="total-row">
+            <span class="t-label">Subtotal</span>
+            <span class="t-val" id="p-subtotal">Rs 0.00</span>
+          </div>
+          <div class="total-row">
+            <span class="t-label">Delivery</span>
+            <span class="t-val" id="p-delivery">Rs 350.00</span>
+          </div>
+          <div class="total-row" id="p-disc-row" style="display:none">
+            <span class="t-label">Discount</span>
+            <span class="t-val" style="color:#10b981" id="p-discount">- Rs 0.00</span>
+          </div>
+          <div class="total-row grand">
+            <span class="t-label">Total Amount</span>
+            <span class="t-val" id="p-total">Rs 350.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Grid -->
+      <div class="inv-info-grid">
+        <div class="info-block">
+          <div class="info-label">Payment Method</div>
+          <div class="info-val" id="p-payMethod">Cash on Delivery (COD)<br>Pay when you receive</div>
+        </div>
+        <div class="info-block">
+          <div class="info-label">Courier & Tracking</div>
+          <div class="info-val" id="p-courierInfo">Courier: —<br>Tracking: —</div>
+        </div>
+        <div class="info-block">
+          <div class="info-label">Delivery Policy</div>
+          <div class="info-val">Island-Wide Delivery<br>2–4 Working Days<br>No Restock After Sold Out</div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="inv-notes" id="p-notes-block">
+        <div class="notes-label">Note</div>
+        <div class="notes-text" id="p-notes">Thank you for shopping with Bossly! 🖤</div>
+      </div>
+
+      <!-- Footer -->
+      <div class="inv-footer">
+        <div class="footer-left">
+          <div class="footer-brand">B◎SSLY</div>
+          <div class="footer-sub">Feel Like a Boss • A & R Fashion (Pvt)</div>
+        </div>
+        <div class="footer-right">
+          WhatsApp: +94 777 677 641<br>
+          facebook.com/BosslyFB<br>
+          Sri Lanka
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const PRODUCTS = [
+  { id:"BOS-WB-26-001", name:"V Neck Short Sleeve Blouse (White)",        price:3500 },
+  { id:"BOS-WB-26-002", name:"V Neck Petal Sleeve Blouse (Orange)",       price:3650 },
+  { id:"BOS-WB-26-003", name:"Roll Up Sleeve Blouse (Green)",             price:3750 },
+  { id:"BOS-WB-26-004", name:"Classic Collar Long Sleeve Blouse (Maroon)",price:3750 },
+  { id:"BOS-WB-26-005", name:"Asymmetrical Skew Collar Blouse (White)",   price:3750 },
+  { id:"BOS-WB-26-006", name:"Boat Neckline Crop Top (White)",            price:3500 },
+  { id:"BOS-WC-26-007", name:"Crinkle Short Sleeve Top (Light Brown)",    price:3500 },
+  { id:"BOS-WD-26-008", name:"Blue Mini Dress (Blue)",                    price:4350 },
+  { id:"BOS-WP-26-009", name:"High Rise Straight Pant (Purple)",          price:4350 },
+  { id:"BOS-WP-26-009", name:"High Rise Straight Pant (Black)",           price:4350 },
+  { id:"BOS-WP-26-010", name:"High Waisted Tapered Pant (Charcoal)",      price:4350 },
+];
+
+let items = [];
+let payStatus = 'COD';
+
+// ── INIT ──
+window.onload = () => {
+  document.getElementById('invDate').value = new Date().toISOString().slice(0,10);
+  addItem();
+  render();
+};
+
+// ── ITEMS ──
+function addItem() {
+  items.push({ product: PRODUCTS[0].id, productName: PRODUCTS[0].name, size:'M', qty:1, price: PRODUCTS[0].price });
+  renderItems();
+  render();
+}
+
+function removeItem(i) {
+  items.splice(i, 1);
+  renderItems();
+  render();
+}
+
+function renderItems() {
+  const c = document.getElementById('items-container');
+  c.innerHTML = items.map((item, i) => `
+    <div class="item-row">
+      <select onchange="updateItem(${i},'product',this.value)">
+        ${PRODUCTS.map((p,pi) => `<option value="${p.id}|${p.name}|${p.price}" ${item.productName===p.name?'selected':''}>${p.name.slice(0,30)}</option>`).join('')}
+        <option value="custom|Custom Item|0" ${item.productName==='Custom Item'?'selected':''}>✏️ Custom Item</option>
+      </select>
+      <select onchange="updateItem(${i},'size',this.value)">
+        ${['XS','S','M','L','XL'].map(s=>`<option ${item.size===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <input type="number" value="${item.qty}" min="1" onchange="updateItem(${i},'qty',this.value)">
+      <input type="number" value="${item.price}" onchange="updateItem(${i},'price',this.value)">
+      <button class="del-btn" onclick="removeItem(${i})">×</button>
+    </div>
+    ${item.productName==='Custom Item'?`<div style="margin:-2px 0 6px;"><input type="text" placeholder="Enter custom item name" value="${item.customName||''}" onchange="updateItem(${i},'customName',this.value)" style="width:100%;padding:7px 10px;border:1px solid #E0D8C8;border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;background:#FAFAF8;outline:none;"></div>`:''}
+  `).join('');
+}
+
+function updateItem(i, field, value) {
+  if (field === 'product') {
+    const parts = value.split('|');
+    items[i].product = parts[0];
+    items[i].productName = parts[1];
+    items[i].price = parseInt(parts[2]) || 0;
+  } else if (field === 'qty') {
+    items[i].qty = parseInt(value) || 1;
+  } else if (field === 'price') {
+    items[i].price = parseFloat(value) || 0;
+  } else if (field === 'customName') {
+    items[i].customName = value;
+  } else {
+    items[i][field] = value;
+  }
+  render();
+}
+
+// ── PAYMENT STATUS ──
+function setPayStatus(status) {
+  payStatus = status;
+  ['COD','Paid','Pending'].forEach(s => {
+    document.getElementById('pill-'+s).classList.toggle('active', s===status);
+  });
+  render();
+}
+
+// ── RENDER PREVIEW ──
+function render() {
+  const inv    = v('invNumber');
+  const date   = v('invDate');
+  const cName  = v('custName') || 'Customer Name';
+  const cPhone = v('custPhone');
+  const cAddr  = v('custAddress');
+  const cCity  = v('custCity');
+  const delFee = parseFloat(v('deliveryFee')) || 0;
+  const disc   = parseFloat(v('discount')) || 0;
+  const courier= v('courier');
+  const track  = v('tracking');
+  const notes  = v('notes');
+
+  // Invoice meta
+  set('p-invNumber', inv);
+  set('p-date', date ? new Date(date).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—');
+
+  // Status badge
+  const badge = document.getElementById('p-statusBadge');
+  if (payStatus === 'COD') {
+    badge.className = 'status-badge status-cod';
+    badge.textContent = '💵 Cash on Delivery';
+  } else if (payStatus === 'Paid') {
+    badge.className = 'status-badge status-paid';
+    badge.textContent = '✅ Paid';
+  } else {
+    badge.className = 'status-badge status-pending';
+    badge.textContent = '⏳ Payment Pending';
+  }
+
+  // Customer
+  set('p-custName', cName);
+  set('p-custDetail', `Phone: ${cPhone||'—'}<br>Address: ${cAddr||'—'}<br>City: ${cCity||'—'}`);
+
+  // Items table
+  const subtotal = items.reduce((s,item) => s + (item.price * item.qty), 0);
+  const total = subtotal + delFee - disc;
+
+  const tbody = document.getElementById('p-items');
+  if (items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ccc;padding:24px;">Add items to see preview</td></tr>';
+  } else {
+    tbody.innerHTML = items.map(item => {
+      const displayName = item.productName === 'Custom Item' ? (item.customName || 'Custom Item') : item.productName;
+      const lineTotal = item.price * item.qty;
+      return `
+        <tr>
+          <td>
+            <strong>${displayName}</strong>
+            <div class="item-desc">${item.product !== item.productName ? item.product : ''}</div>
+          </td>
+          <td style="text-align:center">${item.size}</td>
+          <td style="text-align:center">${item.qty}</td>
+          <td style="text-align:right">Rs ${fmt(item.price)}</td>
+          <td>Rs ${fmt(lineTotal)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Totals
+  set('p-subtotal', 'Rs ' + fmt(subtotal));
+  set('p-delivery', 'Rs ' + fmt(delFee));
+  set('p-total', 'Rs ' + fmt(total));
+
+  const discRow = document.getElementById('p-disc-row');
+  if (disc > 0) {
+    discRow.style.display = 'flex';
+    set('p-discount', '- Rs ' + fmt(disc));
+  } else {
+    discRow.style.display = 'none';
+  }
+
+  // Payment method
+  const payMethods = {
+    COD: 'Cash on Delivery (COD)<br><span style="font-size:11px;color:#888">Pay when you receive your order</span>',
+    Paid: 'Bank Transfer<br><span style="font-size:11px;color:#888">Payment received ✅</span>',
+    Pending: 'Payment Pending<br><span style="font-size:11px;color:#888">Please complete payment</span>',
+  };
+  set('p-payMethod', payMethods[payStatus]);
+
+  // Courier
+  set('p-courierInfo', `Courier: ${courier||'—'}<br>Tracking: ${track||'—'}`);
+
+  // Notes
+  if (notes) {
+    set('p-notes', notes);
+    document.getElementById('p-notes-block').style.display = 'block';
+  } else {
+    set('p-notes', 'Thank you for shopping with Bossly! 🖤');
+  }
+
+  // Form summary
+  set('sum-sub', 'Rs ' + fmt(subtotal));
+  set('sum-del', 'Rs ' + fmt(delFee));
+  set('sum-disc', '- Rs ' + fmt(disc));
+  set('sum-total', 'Rs ' + fmt(total));
+}
+
+// ── HELPERS ──
+function v(id) { return document.getElementById(id)?.value || ''; }
+function set(id, val) { const el = document.getElementById(id); if(el) el.innerHTML = val; }
+function fmt(n) { return Number(n).toLocaleString('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+
+function clearForm() {
+  if (!confirm('Clear all fields?')) return;
+  ['custName','custPhone','custAddress','custCity','courier','tracking','notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('discount').value = '0';
+  document.getElementById('deliveryFee').value = '350';
+  items = [];
+  addItem();
+  render();
+}
+
+function newInvoice() {
+  clearForm();
+  // Auto-increment invoice number
+  const current = document.getElementById('invNumber').value;
+  const match = current.match(/(\d+)$/);
+  if (match) {
+    const next = String(parseInt(match[1]) + 1).padStart(3, '0');
+    document.getElementById('invNumber').value = current.replace(/\d+$/, next);
+  }
+  document.getElementById('invDate').value = new Date().toISOString().slice(0,10);
+  render();
+}
+
+function printInvoice() {
+  window.print();
+}
+</script>
+</body>
+</html>
